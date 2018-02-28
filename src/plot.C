@@ -298,20 +298,20 @@ int main()
     //entry for data
     //this uses the initializer syntax to initialize the histInfo object
     //               leg entry  root file                 draw options  draw color
-    histInfo data = {"Data",    "myhistos/Data_MET.root", "PEX0",       kBlack};
+    histInfo data = {"Data", "myhistos/Data_MET.root", "PEX0", kBlack};
 
     //vector summarizing background histograms to include in the plot
     std::vector<histInfo> bgEntries = {
-        {"t#bar{t}/W",         "myhistos/ttbarW.root",       "hist", kRed},
-        {"Z#rightarrow#nu#nu", "myhistos/ZJetsToNuNu.root",  "hist", kYellow + 2},
-        {"QCD",                "myhistos/QCD.root",          "hist", kMagenta},
-        {"t#bar{t}Z",          "myhistos/TTZ.root",          "hist", kBlue},
-        {"Rare",               "myhistos/Rare.root",         "hist", kGray},
+        {"t#bar{t}/W",         "myhistos/ttbarW.root",       "hist", kBlue-3},
+        {"Z#rightarrow#nu#nu", "myhistos/ZJetsToNuNu.root",  "hist", kRed+2},
+        {"QCD",                "myhistos/QCD.root",          "hist", kAzure-2},
+        {"t#bar{t}Z",          "myhistos/TTZ.root",          "hist", kGreen+2},
+        {"Rare",               "myhistos/Rare.root",         "hist", kViolet-6},
     };
 
     //vector summarizing signal histograms to include in the plot
     std::vector<histInfo> sigEntries = {
-        {"T2tt (1000, 1)", "myhistos/Signal_fastsim_T2tt_mStop-1000.root", "hist", kGreen + 2},
+        {"T2tt (1000, 1)", "myhistos/Signal_fastsim_T2tt_mStop-1000.root", "hist", kCyan-4},
     };
 
     //make plotter object with the required sources for histograms specified
