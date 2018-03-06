@@ -4,11 +4,13 @@
 #include "TCanvas.h"
 #include "TLegend.h"
 #include "TLatex.h"
+#include "TPad.h"
 
 #include <memory>
 #include <vector>
 #include <string>
 #include <cstdio>
+#include <iostream>
 
 //This is a helper function which will keep the plot from overlapping with the legend
 void smartMax(const TH1 * const h, const TLegend* const l, const TPad* const p, double& gmin, double& gmax, double& gpThreshMax, const bool error)
@@ -134,6 +136,8 @@ public:
 
     void plot(const std::string& histName, const std::string& xAxisLabel, const std::string& yAxisLabel = "Events", const bool isLogY = false, const double xmin = 999.9, const double xmax = -999.9, int rebin = -1, double lumi = 36100)
     {
+        printf("Begin plotting histogram %s\n", histName.c_str());
+
         //This is a magic incantation to disassociate opened histograms from their files so the files can be closed
         TH1::AddDirectory(false);
 
@@ -142,7 +146,14 @@ public:
         //switch to the canvas to ensure it is the active object
         c->cd();
 
-        //Create TLegend
+        // Upper plot will be in pad1: TPad(x1, y1, x2, y2)
+        TPad *pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
+        pad1->SetBottomMargin(0); // Upper and lower plot are joined
+        pad1->SetGridy();         // Vertical grid
+        pad1->Draw();             // Draw the upper pad: pad1
+        pad1->cd();               // pad1 becomes the current pad
+
+        //Create TLegend: TLegend(x1, y1, x2, y2)
         TLegend *leg = new TLegend(0.50, 0.56, 0.89, 0.88);
         leg->SetFillStyle(0);
         leg->SetBorderSize(0);
@@ -282,6 +293,15 @@ public:
         mark.SetTextAlign(31);
         mark.DrawLatex(1 - gPad->GetRightMargin(), 1 - (gPad->GetTopMargin() - 0.017), lumistamp);
 
+        // lower plot will be in pad2
+        c->cd();          // Go back to the main canvas before defining pad2
+        TPad *pad2 = new TPad("pad2", "pad2", 0, 0.05, 1, 0.3);
+        pad2->SetTopMargin(0);
+        pad2->SetBottomMargin(0.2);
+        pad2->SetGridy(); // vertical grid
+        pad2->Draw();
+        pad2->cd();       // pad2 becomes the current pad        
+
         //save new plot to file
         c->Print((histName + ".png").c_str());
 
@@ -290,6 +310,8 @@ public:
         delete leg;
         delete bgStack;
         delete hbgSum;
+
+        printf("Finish plotting histogram %s\n", histName.c_str());
     }
 };
 
