@@ -83,16 +83,16 @@ public:
     }
 
     //helper function for axes
-    void setupAxes()
+    void setupAxes(double xOffset, double yOffset, double xSize, double ySize)
     {
         h->SetStats(0);
         h->SetTitle(0);
-        h->GetYaxis()->SetTitleOffset(1.2);
-        h->GetXaxis()->SetTitleOffset(1.1);
-        h->GetXaxis()->SetTitleSize(0.045);
-        h->GetXaxis()->SetLabelSize(0.045);
-        h->GetYaxis()->SetTitleSize(0.045);
-        h->GetYaxis()->SetLabelSize(0.045);
+        h->GetXaxis()->SetTitleOffset(xOffset);
+        h->GetYaxis()->SetTitleOffset(yOffset);
+        h->GetXaxis()->SetTitleSize(xSize);
+        h->GetXaxis()->SetLabelSize(xSize);
+        h->GetYaxis()->SetTitleSize(ySize);
+        h->GetYaxis()->SetLabelSize(ySize);
         if(h->GetXaxis()->GetNdivisions() % 100 > 5) h->GetXaxis()->SetNdivisions(6, 5, 0);
     }
 
@@ -223,9 +223,9 @@ public:
 
         //create a dummy histogram to act as the axes
         histInfo dummy(new TH1D("dummy", "dummy", 1000, data_.h->GetBinLowEdge(1), data_.h->GetBinLowEdge(data_.h->GetNbinsX()) + data_.h->GetBinWidth(data_.h->GetNbinsX())));
-        dummy.setupAxes();
+        dummy.setupAxes(1.1, 1.2, 0.045, 0.045);
         dummy.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
-        dummy.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
+        //dummy.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
         //Set the y-range of the histogram
         if(isLogY)
         {
@@ -304,15 +304,25 @@ public:
         pad2->cd();       // pad2 becomes the current pad        
 
         //Make ratio histogram for data / background.
-        TH1* ratio = (TH1*)data_.h->Clone();
-        ratio->SetLineColor(kBlack);
-        ratio->SetMinimum(0.5);
-        ratio->SetMaximum(1.5);
-        ratio->Sumw2();
-        ratio->SetStats(0);
-        ratio->Divide(hbgSum);
-        ratio->SetMarkerStyle(21);
-        ratio->Draw("ep");
+        //histInfo dummy(new TH1D("dummy", "dummy", 1000, data_.h->GetBinLowEdge(1), data_.h->GetBinLowEdge(data_.h->GetNbinsX()) + data_.h->GetBinWidth(data_.h->GetNbinsX())));
+        //TH1* ratio = (TH1*)data_.h->Clone();
+        histInfo ratio((TH1*)data_.h->Clone());
+        
+        ratio.drawOptions = "ep";
+        ratio.color = kBlack;
+        ratio.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
+        ratio.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
+        ratio.setupAxes(0.5, 0.5, 0.15, 0.15);
+        ratio.h->GetYaxis()->SetNdivisions(6, 5, 0);
+
+        //ratio.h->SetLineColor(kBlack);
+        ratio.h->SetMinimum(0.5);
+        ratio.h->SetMaximum(1.5);
+        ratio.h->Sumw2();
+        ratio.h->SetStats(0);
+        ratio.h->Divide(hbgSum);
+        ratio.h->SetMarkerStyle(21);
+        ratio.h->Draw("ep");
 
         //save new plot to file
         c->Print((histName + ".png").c_str());
