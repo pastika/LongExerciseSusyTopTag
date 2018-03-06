@@ -148,7 +148,7 @@ public:
 
         // Upper plot will be in pad1: TPad(x1, y1, x2, y2)
         TPad *pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
-        pad1->SetBottomMargin(0); // Upper and lower plot are joined
+        //pad1->SetBottomMargin(0); // Upper and lower plot are joined
         pad1->SetGridy();         // Vertical grid
         pad1->Draw();             // Draw the upper pad: pad1
         pad1->cd();               // pad1 becomes the current pad
@@ -219,7 +219,7 @@ public:
         gPad->SetLeftMargin(0.12);
         gPad->SetRightMargin(0.06);
         gPad->SetTopMargin(0.08);
-        gPad->SetBottomMargin(0.12);
+        gPad->SetBottomMargin(0.0);
 
         //create a dummy histogram to act as the axes
         histInfo dummy(new TH1D("dummy", "dummy", 1000, data_.h->GetBinLowEdge(1), data_.h->GetBinLowEdge(data_.h->GetNbinsX()) + data_.h->GetBinWidth(data_.h->GetNbinsX())));
@@ -297,22 +297,29 @@ public:
         // lower plot will be in pad2
         c->cd();          // Go back to the main canvas before defining pad2
         TPad *pad2 = new TPad("pad2", "pad2", 0, 0.05, 1, 0.3);
-        pad2->SetTopMargin(0);
-        pad2->SetBottomMargin(0.2);
+        //pad2->SetTopMargin(0);
+        //pad2->SetBottomMargin(0.2);
         pad2->SetGridy(); // vertical grid
         pad2->Draw();
         pad2->cd();       // pad2 becomes the current pad        
 
-        //Make ratio histogram for data / background.
         //histInfo dummy(new TH1D("dummy", "dummy", 1000, data_.h->GetBinLowEdge(1), data_.h->GetBinLowEdge(data_.h->GetNbinsX()) + data_.h->GetBinWidth(data_.h->GetNbinsX())));
         //TH1* ratio = (TH1*)data_.h->Clone();
+
+        //Set Canvas margin (gPad is root magic to access the current pad, in this case canvas "c")
+        gPad->SetLeftMargin(0.12);
+        gPad->SetRightMargin(0.06);
+        gPad->SetTopMargin(0);
+        gPad->SetBottomMargin(0.20);
+
+        //Make ratio histogram for data / background.
         histInfo ratio((TH1*)data_.h->Clone());
         
         ratio.drawOptions = "ep";
         ratio.color = kBlack;
         ratio.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
         ratio.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
-        ratio.setupAxes(0.5, 0.5, 0.15, 0.15);
+        ratio.setupAxes(0.7, 0.4, 0.15, 0.15);
         ratio.h->GetYaxis()->SetNdivisions(6, 5, 0);
 
         //ratio.h->SetLineColor(kBlack);
