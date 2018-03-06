@@ -170,6 +170,7 @@ public:
         THStack *bgStack = new THStack();
         //Make seperate histogram from sum of BG histograms because I don't know how to make a THStack give me this 
         TH1* hbgSum = nullptr;
+
         for(int iBG = bgEntries_.size() - 1; iBG >= 0; --iBG)
         {
             //Get new histogram
@@ -301,6 +302,17 @@ public:
         pad2->SetGridy(); // vertical grid
         pad2->Draw();
         pad2->cd();       // pad2 becomes the current pad        
+
+        //Make ratio histogram for data / background.
+        TH1* ratio = (TH1*)data_.h->Clone();
+        ratio->SetLineColor(kBlack);
+        ratio->SetMinimum(0.5);
+        ratio->SetMaximum(1.5);
+        ratio->Sumw2();
+        ratio->SetStats(0);
+        ratio->Divide(hbgSum);
+        ratio->SetMarkerStyle(21);
+        ratio->Draw("ep");
 
         //save new plot to file
         c->Print((histName + ".png").c_str());
