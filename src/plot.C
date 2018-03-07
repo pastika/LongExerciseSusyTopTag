@@ -79,7 +79,7 @@ public:
         h->SetMarkerStyle(20);
 
         // rebin the histogram if desired
-        if(rebin >0) h->Rebin(rebin);
+        if(rebin > 0) h->Rebin(rebin);
     }
 
     //helper function for axes
@@ -94,6 +94,15 @@ public:
         h->GetYaxis()->SetTitleSize(ySize);
         h->GetYaxis()->SetLabelSize(ySize);
         if(h->GetXaxis()->GetNdivisions() % 100 > 5) h->GetXaxis()->SetNdivisions(6, 5, 0);
+    }
+
+    //helper function for pads
+    void setupPad(double left, double right, double top, double bottom)
+    {
+        gPad->SetLeftMargin(left);
+        gPad->SetRightMargin(right);
+        gPad->SetTopMargin(top);
+        gPad->SetBottomMargin(bottom);
     }
 
     //wrapper to draw histogram
@@ -215,17 +224,21 @@ public:
             smartMax(entry.h.get(), leg, static_cast<TPad*>(gPad), min, max, lmax, false);
         }
 
-        //Set Canvas margin (gPad is root magic to access the current pad, in this case canvas "c")
-        gPad->SetLeftMargin(0.12);
-        gPad->SetRightMargin(0.06);
-        gPad->SetTopMargin(0.08);
-        gPad->SetBottomMargin(0.0);
+        //Set Canvas margin (gPad is root magic to access the current pad, in this case canvas pad1)
+        //gPad->SetLeftMargin(0.12);
+        //gPad->SetRightMargin(0.06);
+        //gPad->SetTopMargin(0.08);
+        //gPad->SetBottomMargin(0.0);
 
         //create a dummy histogram to act as the axes
         histInfo dummy(new TH1D("dummy", "dummy", 1000, data_.h->GetBinLowEdge(1), data_.h->GetBinLowEdge(data_.h->GetNbinsX()) + data_.h->GetBinWidth(data_.h->GetNbinsX())));
+        // set pad margins: setupPad(left, right, top, bottom)
+        dummy.setupPad(0.12, 0.06, 0.08, 0.0);
         dummy.setupAxes(1.1, 1.2, 0.045, 0.045);
         dummy.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
         //dummy.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
+        dummy.h->GetXaxis()->SetTickLength(0.03);
+
         //Set the y-range of the histogram
         if(isLogY)
         {
@@ -307,20 +320,24 @@ public:
         //TH1* ratio = (TH1*)data_.h->Clone();
 
         //Set Canvas margin (gPad is root magic to access the current pad, in this case pad2)
-        gPad->SetLeftMargin(0.12);
-        gPad->SetRightMargin(0.06);
-        gPad->SetTopMargin(0);
-        gPad->SetBottomMargin(0.40);
+        //gPad->SetLeftMargin(0.12);
+        //gPad->SetRightMargin(0.06);
+        //gPad->SetTopMargin(0);
+        //gPad->SetBottomMargin(0.40);
 
         //Make ratio histogram for data / background.
         histInfo ratio((TH1*)data_.h->Clone());
+
+        // set pad margins: setupPad(left, right, top, bottom)
+        ratio.setupPad(0.12, 0.06, 0.0, 0.40);
         
         ratio.drawOptions = "ep";
         ratio.color = kBlack;
         ratio.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
         //ratio.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
         ratio.h->GetYaxis()->SetTitle("Data / BG");
-        ratio.setupAxes(1.1, 0.5, 0.1, 0.1);
+        ratio.h->GetXaxis()->SetTickLength(0.1);
+        ratio.setupAxes(1.2, 0.5, 0.12, 0.12);
         ratio.h->GetYaxis()->SetNdivisions(6, 5, 0);
 
         //ratio.h->SetLineColor(kBlack);
