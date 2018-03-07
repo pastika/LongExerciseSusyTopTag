@@ -306,11 +306,11 @@ public:
         //histInfo dummy(new TH1D("dummy", "dummy", 1000, data_.h->GetBinLowEdge(1), data_.h->GetBinLowEdge(data_.h->GetNbinsX()) + data_.h->GetBinWidth(data_.h->GetNbinsX())));
         //TH1* ratio = (TH1*)data_.h->Clone();
 
-        //Set Canvas margin (gPad is root magic to access the current pad, in this case canvas "c")
+        //Set Canvas margin (gPad is root magic to access the current pad, in this case pad2)
         gPad->SetLeftMargin(0.12);
         gPad->SetRightMargin(0.06);
         gPad->SetTopMargin(0);
-        gPad->SetBottomMargin(0.20);
+        gPad->SetBottomMargin(0.40);
 
         //Make ratio histogram for data / background.
         histInfo ratio((TH1*)data_.h->Clone());
@@ -318,8 +318,9 @@ public:
         ratio.drawOptions = "ep";
         ratio.color = kBlack;
         ratio.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
-        ratio.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
-        ratio.setupAxes(0.7, 0.4, 0.15, 0.15);
+        //ratio.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
+        ratio.h->GetYaxis()->SetTitle("Data / BG");
+        ratio.setupAxes(1.1, 0.5, 0.1, 0.1);
         ratio.h->GetYaxis()->SetNdivisions(6, 5, 0);
 
         //ratio.h->SetLineColor(kBlack);
@@ -329,10 +330,11 @@ public:
         ratio.h->SetStats(0);
         ratio.h->Divide(hbgSum);
         ratio.h->SetMarkerStyle(21);
-        ratio.h->Draw("ep");
+        ratio.draw();
 
         //save new plot to file
         c->Print((histName + ".png").c_str());
+        c->Print((histName + ".pdf").c_str());
 
         //clean up dynamic memory
         delete c;
