@@ -83,16 +83,16 @@ public:
     }
 
     //helper function for axes
-    void setupAxes(double xOffset, double yOffset, double xSize, double ySize)
+    void setupAxes(double xOffset, double yOffset, double xTitle, double yTitle, double xLabel, double yLabel)
     {
         h->SetStats(0);
         h->SetTitle(0);
         h->GetXaxis()->SetTitleOffset(xOffset);
         h->GetYaxis()->SetTitleOffset(yOffset);
-        h->GetXaxis()->SetTitleSize(xSize);
-        h->GetXaxis()->SetLabelSize(xSize);
-        h->GetYaxis()->SetTitleSize(ySize);
-        h->GetYaxis()->SetLabelSize(ySize);
+        h->GetXaxis()->SetTitleSize(xTitle);
+        h->GetYaxis()->SetTitleSize(yTitle);
+        h->GetXaxis()->SetLabelSize(xLabel);
+        h->GetYaxis()->SetLabelSize(yLabel);
         if(h->GetXaxis()->GetNdivisions() % 100 > 5) h->GetXaxis()->SetNdivisions(6, 5, 0);
     }
 
@@ -234,7 +234,7 @@ public:
         histInfo dummy(new TH1D("dummy", "dummy", 1000, data_.h->GetBinLowEdge(1), data_.h->GetBinLowEdge(data_.h->GetNbinsX()) + data_.h->GetBinWidth(data_.h->GetNbinsX())));
         // set pad margins: setupPad(left, right, top, bottom)
         dummy.setupPad(0.12, 0.06, 0.08, 0.0);
-        dummy.setupAxes(1.1, 1.2, 0.045, 0.045);
+        dummy.setupAxes(1.1, 1.0, 0.06, 0.06, 0.05, 0.05);
         dummy.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
         //dummy.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
         dummy.h->GetXaxis()->SetTickLength(0.03);
@@ -337,7 +337,7 @@ public:
         //ratio.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
         ratio.h->GetYaxis()->SetTitle("Data / BG");
         ratio.h->GetXaxis()->SetTickLength(0.1);
-        ratio.setupAxes(1.2, 0.5, 0.12, 0.12);
+        ratio.setupAxes(1.2, 0.4, 0.15, 0.15, 0.13, 0.13);
         ratio.h->GetYaxis()->SetNdivisions(6, 5, 0);
 
         //ratio.h->SetLineColor(kBlack);
