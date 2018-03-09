@@ -103,6 +103,7 @@ public:
         gPad->SetRightMargin(right);
         gPad->SetTopMargin(top);
         gPad->SetBottomMargin(bottom);
+        gPad->SetTicks(1,1);
     }
 
     //wrapper to draw histogram
@@ -158,7 +159,7 @@ public:
         // Upper plot will be in pad1: TPad(x1, y1, x2, y2)
         TPad *pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
         //pad1->SetBottomMargin(0); // Upper and lower plot are joined
-        pad1->SetGridy();         // Vertical grid
+        pad1->SetGridy();         // Horizontal grid
         pad1->Draw();             // Draw the upper pad: pad1
         pad1->cd();               // pad1 becomes the current pad
 
@@ -238,6 +239,7 @@ public:
         dummy.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
         //dummy.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
         dummy.h->GetXaxis()->SetTickLength(0.03);
+        dummy.h->GetYaxis()->SetTickLength(0.03);
 
         //Set the y-range of the histogram
         if(isLogY)
@@ -312,7 +314,7 @@ public:
         TPad *pad2 = new TPad("pad2", "pad2", 0, 0.05, 1, 0.3);
         //pad2->SetTopMargin(0);
         //pad2->SetBottomMargin(0.2);
-        pad2->SetGridy(); // vertical grid
+        pad2->SetGridy(); // Horizontal grid
         pad2->Draw();
         pad2->cd();       // pad2 becomes the current pad        
 
@@ -337,6 +339,7 @@ public:
         //ratio.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
         ratio.h->GetYaxis()->SetTitle("Data / BG");
         ratio.h->GetXaxis()->SetTickLength(0.1);
+        ratio.h->GetYaxis()->SetTickLength(0.045);
         ratio.setupAxes(1.2, 0.4, 0.15, 0.15, 0.13, 0.13);
         ratio.h->GetYaxis()->SetNdivisions(6, 5, 0);
 
