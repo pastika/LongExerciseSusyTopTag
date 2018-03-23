@@ -4,11 +4,13 @@
 #include "TCanvas.h"
 #include "TLegend.h"
 #include "TLatex.h"
+#include "TPad.h"
 
 #include <memory>
 #include <vector>
 #include <string>
 #include <cstdio>
+#include <iostream>
 
 //This is a helper function which will keep the plot from overlapping with the legend
 void smartMax(const TH1 * const h, const TLegend* const l, const TPad* const p, double& gmin, double& gmax, double& gpThreshMax, const bool error)
@@ -77,21 +79,31 @@ public:
         h->SetMarkerStyle(20);
 
         // rebin the histogram if desired
-        if(rebin >0) h->Rebin(rebin);
+        if(rebin > 0) h->Rebin(rebin);
     }
 
     //helper function for axes
-    void setupAxes()
+    void setupAxes(double xOffset, double yOffset, double xTitle, double yTitle, double xLabel, double yLabel)
     {
         h->SetStats(0);
         h->SetTitle(0);
-        h->GetYaxis()->SetTitleOffset(1.2);
-        h->GetXaxis()->SetTitleOffset(1.1);
-        h->GetXaxis()->SetTitleSize(0.045);
-        h->GetXaxis()->SetLabelSize(0.045);
-        h->GetYaxis()->SetTitleSize(0.045);
-        h->GetYaxis()->SetLabelSize(0.045);
+        h->GetXaxis()->SetTitleOffset(xOffset);
+        h->GetYaxis()->SetTitleOffset(yOffset);
+        h->GetXaxis()->SetTitleSize(xTitle);
+        h->GetYaxis()->SetTitleSize(yTitle);
+        h->GetXaxis()->SetLabelSize(xLabel);
+        h->GetYaxis()->SetLabelSize(yLabel);
         if(h->GetXaxis()->GetNdivisions() % 100 > 5) h->GetXaxis()->SetNdivisions(6, 5, 0);
+    }
+
+    //helper function for pads
+    void setupPad(double left, double right, double top, double bottom)
+    {
+        gPad->SetLeftMargin(left);
+        gPad->SetRightMargin(right);
+        gPad->SetTopMargin(top);
+        gPad->SetBottomMargin(bottom);
+        gPad->SetTicks(1,1);
     }
 
     //wrapper to draw histogram
@@ -135,6 +147,8 @@ public:
 
     void plot(const std::string& histName, const std::string& xAxisLabel, const std::string& yAxisLabel = "Events", const bool isLogY = false, const double xmin = 999.9, const double xmax = -999.9, int rebin = -1, double lumi = 36100)
     {
+        printf("Begin plotting histogram %s\n", histName.c_str());
+
         //This is a magic incantation to disassociate opened histograms from their files so the files can be closed
         TH1::AddDirectory(false);
 
@@ -143,7 +157,14 @@ public:
         //switch to the canvas to ensure it is the active object
         c->cd();
 
-        //Create TLegend
+        // Upper plot will be in pad1: TPad(x1, y1, x2, y2)
+        TPad *pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
+        //pad1->SetBottomMargin(0); // Upper and lower plot are joined
+        pad1->SetGridy();         // Horizontal grid
+        pad1->Draw();             // Draw the upper pad: pad1
+        pad1->cd();               // pad1 becomes the current pad
+
+        //Create TLegend: TLegend(x1, y1, x2, y2)
         TLegend *leg = new TLegend(0.50, 0.56, 0.89, 0.88);
         leg->SetFillStyle(0);
         leg->SetBorderSize(0);
@@ -160,6 +181,7 @@ public:
         THStack *bgStack = new THStack();
         //Make seperate histogram from sum of BG histograms because I don't know how to make a THStack give me this 
         TH1* hbgSum = nullptr;
+
         for(int iBG = bgEntries_.size() - 1; iBG >= 0; --iBG)
         {
             //Get new histogram
@@ -204,17 +226,22 @@ public:
             smartMax(entry.h.get(), leg, static_cast<TPad*>(gPad), min, max, lmax, false);
         }
 
-        //Set Canvas margin (gPad is root magic to access the current pad, in this case canvas "c")
-        gPad->SetLeftMargin(0.12);
-        gPad->SetRightMargin(0.06);
-        gPad->SetTopMargin(0.08);
-        gPad->SetBottomMargin(0.12);
+        //Set Canvas margin (gPad is root magic to access the current pad, in this case canvas pad1)
+        //gPad->SetLeftMargin(0.12);
+        //gPad->SetRightMargin(0.06);
+        //gPad->SetTopMargin(0.08);
+        //gPad->SetBottomMargin(0.0);
 
         //create a dummy histogram to act as the axes
         histInfo dummy(new TH1D("dummy", "dummy", 1000, data_.h->GetBinLowEdge(1), data_.h->GetBinLowEdge(data_.h->GetNbinsX()) + data_.h->GetBinWidth(data_.h->GetNbinsX())));
-        dummy.setupAxes();
+        // set pad margins: setupPad(left, right, top, bottom)
+        dummy.setupPad(0.12, 0.06, 0.08, 0.0);
+        dummy.setupAxes(1.1, 1.0, 0.06, 0.06, 0.05, 0.05);
         dummy.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
-        dummy.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
+        //dummy.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
+        dummy.h->GetXaxis()->SetTickLength(0.03);
+        dummy.h->GetYaxis()->SetTickLength(0.03);
+
         //Set the y-range of the histogram
         if(isLogY)
         {
@@ -283,6 +310,49 @@ public:
         mark.SetTextAlign(31);
         mark.DrawLatex(1 - gPad->GetRightMargin(), 1 - (gPad->GetTopMargin() - 0.017), lumistamp);
 
+        // lower plot will be in pad2
+        c->cd();          // Go back to the main canvas before defining pad2
+        TPad *pad2 = new TPad("pad2", "pad2", 0, 0.05, 1, 0.3);
+        //pad2->SetTopMargin(0);
+        //pad2->SetBottomMargin(0.2);
+        pad2->SetGridy(); // Horizontal grid
+        pad2->Draw();
+        pad2->cd();       // pad2 becomes the current pad        
+
+        //histInfo dummy(new TH1D("dummy", "dummy", 1000, data_.h->GetBinLowEdge(1), data_.h->GetBinLowEdge(data_.h->GetNbinsX()) + data_.h->GetBinWidth(data_.h->GetNbinsX())));
+        //TH1* ratio = (TH1*)data_.h->Clone();
+
+        //Set Canvas margin (gPad is root magic to access the current pad, in this case pad2)
+        //gPad->SetLeftMargin(0.12);
+        //gPad->SetRightMargin(0.06);
+        //gPad->SetTopMargin(0);
+        //gPad->SetBottomMargin(0.40);
+
+        //Make ratio histogram for data / background.
+        histInfo ratio((TH1*)data_.h->Clone());
+
+        // set pad margins: setupPad(left, right, top, bottom)
+        ratio.setupPad(0.12, 0.06, 0.0, 0.40);
+        
+        ratio.drawOptions = "ep";
+        ratio.color = kBlack;
+        ratio.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
+        //ratio.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
+        ratio.h->GetYaxis()->SetTitle("Data / BG");
+        ratio.h->GetXaxis()->SetTickLength(0.1);
+        ratio.h->GetYaxis()->SetTickLength(0.045);
+        ratio.setupAxes(1.2, 0.4, 0.15, 0.15, 0.13, 0.13);
+        ratio.h->GetYaxis()->SetNdivisions(6, 5, 0);
+
+        //ratio.h->SetLineColor(kBlack);
+        ratio.h->SetMinimum(0.5);
+        ratio.h->SetMaximum(1.5);
+        ratio.h->Sumw2();
+        ratio.h->SetStats(0);
+        ratio.h->Divide(hbgSum);
+        ratio.h->SetMarkerStyle(21);
+        ratio.draw();
+
         //save new plot to file
         std::string name = histName;
         size_t pos = name.find("/");
@@ -298,6 +368,8 @@ public:
         delete leg;
         delete bgStack;
         delete hbgSum;
+
+        printf("Finish plotting histogram %s\n", histName.c_str());
     }
 };
 
