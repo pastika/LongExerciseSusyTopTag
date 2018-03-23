@@ -130,6 +130,7 @@ private:
     std::vector<histInfo> sigEntries_;
     
 public:
+    Plotter(histInfo&  data, std::vector<histInfo>&  bgEntries, std::vector<histInfo>&  sigEntries) : data_(data), bgEntries_(bgEntries), sigEntries_(sigEntries) {}
     Plotter(histInfo&& data, std::vector<histInfo>&& bgEntries, std::vector<histInfo>&& sigEntries) : data_(data), bgEntries_(bgEntries), sigEntries_(sigEntries) {}
 
     void plot(const std::string& histName, const std::string& xAxisLabel, const std::string& yAxisLabel = "Events", const bool isLogY = false, const double xmin = 999.9, const double xmax = -999.9, int rebin = -1, double lumi = 36100)
@@ -177,7 +178,7 @@ public:
         data_.rebin = rebin;
         data_.retrieveHistogram();
         leg->AddEntry(data_.h.get(), data_.legEntry.c_str(), data_.drawOptions.c_str());
-        smartMax(hbgSum, leg, static_cast<TPad*>(gPad), min, max, lmax, true);
+        smartMax(data_.h.get(), leg, static_cast<TPad*>(gPad), min, max, lmax, true);
 
         //background
         for(auto& entry : bgEntries_)
@@ -232,7 +233,7 @@ public:
             double locMin = 0.0;
             double legMin = (1.2*max - locMin) * (leg->GetY1() - gPad->GetBottomMargin()) / ((1 - gPad->GetTopMargin()) - gPad->GetBottomMargin());
             if(lmax > legMin) max *= (lmax - locMin)/(legMin - locMin);
-            dummy.h->GetYaxis()->SetRangeUser(0.0, max*1.2);
+            dummy.h->GetYaxis()->SetRangeUser(0.0, max*1.3);
         }
         //set x-axis range
         if(xmin < xmax) dummy.h->GetXaxis()->SetRangeUser(xmin, xmax);
@@ -283,7 +284,14 @@ public:
         mark.DrawLatex(1 - gPad->GetRightMargin(), 1 - (gPad->GetTopMargin() - 0.017), lumistamp);
 
         //save new plot to file
-        c->Print((histName + ".png").c_str());
+        std::string name = histName;
+        size_t pos = name.find("/");
+        do
+        {
+            name[pos] = '_';
+        }
+        while( (pos = name.find("/", pos + 1)) != std::string::npos);
+        c->Print((name + ".png").c_str());
 
         //clean up dynamic memory
         delete c;
@@ -298,26 +306,53 @@ int main()
     //entry for data
     //this uses the initializer syntax to initialize the histInfo object
     //               leg entry  root file                 draw options  draw color
-    histInfo data = {"Data",    "myhistos/Data_MET.root", "PEX0",       kBlack};
+    histInfo dataPhoton = {"Data",    "../TT_Data_SinglePhoton-2018-3-23.root", "PEX0",       kBlack};
+    histInfo dataMuon   = {"Data",    "../TT_Data_SingleMuon-2018-3-23.root",   "PEX0",       kBlack};
+    histInfo dataMET    = {"Data",    "../TT_Data_MET-2018-3-23.root",          "PEX0",       kBlack};
+    histInfo dataJetHT  = {"Data",    "../TT_Data_JetHT-2018-3-23.root",        "PEX0",       kBlack};
 
     //vector summarizing background histograms to include in the plot
     std::vector<histInfo> bgEntries = {
-        {"t#bar{t}/W",         "myhistos/ttbarW.root",       "hist", kRed},
-        {"Z#rightarrow#nu#nu", "myhistos/ZJetsToNuNu.root",  "hist", kYellow + 2},
-        {"QCD",                "myhistos/QCD.root",          "hist", kMagenta},
-        {"t#bar{t}Z",          "myhistos/TTZ.root",          "hist", kBlue},
-        {"Rare",               "myhistos/Rare.root",         "hist", kGray},
+        {"Z#rightarrowll",     "../TT_DYJetsToLL-2018-3-23.root",      "hist", kBlue},
+        {"t#bar{t}",           "../TT_TTbarSingleLep-2018-3-23.root",  "hist", kRed},
+        {"G+Jets",             "../TT_GJets-2018-3-23.root",           "hist", kGreen + 2},
+        {"QCD",                "../TT_QCD-2018-3-23.root",             "hist", kOrange},
+        {"W+Jets",             "../TT_WJetsToLNu-2018-3-23.root",      "hist", kGray},
+        {"TTG",                "../TT_TTG-2018-3-23.root",             "hist", kYellow + 3},
+        {"TTZ",                "../TT_TTZ-2018-3-23.root",             "hist", kMagenta + 2},
     };
 
     //vector summarizing signal histograms to include in the plot
     std::vector<histInfo> sigEntries = {
-        {"T2tt (1000, 1)", "myhistos/Signal_fastsim_T2tt_mStop-1000.root", "hist", kGreen + 2},
+//        {"T2tt (1000, 1)", "myhistos/Signal_fastsim_T2tt_mStop-1000.root", "hist", kGreen + 2},
     };
 
     //make plotter object with the required sources for histograms specified
-    Plotter plt(std::move(data), std::move(bgEntries), std::move(sigEntries));
+    Plotter pltMET(dataMET, bgEntries, sigEntries);
+    Plotter pltPhoton(dataPhoton, bgEntries, sigEntries);
+    Plotter pltMuon(dataMuon, bgEntries, sigEntries);
+    Plotter pltJetHT(dataJetHT, bgEntries, sigEntries);
 
-    plt.plot("HT", "H_{T} [GeV]", "Events", true, -1, -1, 5);
-    plt.plot("Nt", "N_{T}");
-    plt.plot("counts", "bins", "Events", true);
+    std::vector<std::pair<std::string, Plotter*>> controlRegions = {
+        {"ttbar", &pltMET},
+        {"photon", &pltPhoton},
+        {"dilepton", &pltMuon},
+        {"ttbarLep", &pltMuon},
+        {"QCD", &pltJetHT},
+    };
+
+    for(auto& cr : controlRegions)
+    {
+
+        cr.second->plot(cr.first + "/HT", "H_{T} [GeV]", "Events", true, 0, 2000, 5);
+        cr.second->plot(cr.first + "/nJets", "N_{j}");
+        cr.second->plot(cr.first + "/nBJets", "N_{b}", "Events", false, -0.5, 9.5);
+        cr.second->plot(cr.first + "/nTops", "N_{t}", "Events", true);
+        cr.second->plot(cr.first + "/fakerateHT2", "H_{T} [GeV]", "Events", true, 0, 2000, 5);
+        cr.second->plot(cr.first + "/fakerateNj2", "N_{j}");
+        cr.second->plot(cr.first + "/fakerateNb2", "N_{b}", "Events", false, -0.5, 9.5);
+        cr.second->plot(cr.first + "/randomTopPt", "rand top p_{T} [GeV]", "Events", false, -1, -1, 5);
+        cr.second->plot(cr.first + "/randomTopCandPt", "rand top p_{T} [GeV]", "Events", false, -1, -1, 5);
+        
+    }
 }
