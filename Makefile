@@ -24,7 +24,7 @@ LD         = g++
 LIBS       = $(shell root-config --glibs)
 LIBSTOPTAGGER = -L$(TTTDIR) -lTopTagger
 
-PROGRAMS = RunSimpleAnalyzer plot RunLostLeptonBackground
+PROGRAMS = plot
 
 
 all: mkobj $(PROGRAMS)

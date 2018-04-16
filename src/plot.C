@@ -147,7 +147,7 @@ public:
 
     void plot(const std::string& histName, const std::string& xAxisLabel, const std::string& yAxisLabel = "Events", const bool isLogY = false, const double xmin = 999.9, const double xmax = -999.9, int rebin = -1, double lumi = 36100)
     {
-        printf("Begin plotting histogram %s\n", histName.c_str());
+//        printf("Begin plotting histogram %s\n", histName.c_str());
 
         //This is a magic incantation to disassociate opened histograms from their files so the files can be closed
         TH1::AddDirectory(false);
@@ -199,7 +199,10 @@ public:
         data_.histName = histName;
         data_.rebin = rebin;
         data_.retrieveHistogram();
-        leg->AddEntry(data_.h.get(), data_.legEntry.c_str(), data_.drawOptions.c_str());
+
+        char label[256];
+        sprintf(label, "%s (%0.1e)", data_.legEntry.c_str(), data_.h->Integral(0, data_.h->GetNbinsX() + 1));
+        leg->AddEntry(data_.h.get(), label, data_.drawOptions.c_str());
         smartMax(data_.h.get(), leg, static_cast<TPad*>(gPad), min, max, lmax, true);
 
         //background
@@ -208,8 +211,10 @@ public:
             //set fill color so BG will have solid fill
             entry.setFillColor();
 
+            sprintf(label, "%s (%0.1e)", entry.legEntry.c_str(), entry.h->Integral(0, entry.h->GetNbinsX() + 1));
+
             //add histograms to TLegend
-            leg->AddEntry(entry.h.get(), entry.legEntry.c_str(), "F");
+            leg->AddEntry(entry.h.get(), label, "F");
         }
         smartMax(hbgSum, leg, static_cast<TPad*>(gPad), min, max, lmax, false);
 
@@ -303,7 +308,7 @@ public:
         mark.DrawLatex(gPad->GetLeftMargin(), 1 - (gPad->GetTopMargin() - 0.017), "CMS"); // #scale[0.8]{#it{Preliminary}}");
         mark.SetTextSize(0.040);
         mark.SetTextFont(52);
-        mark.DrawLatex(gPad->GetLeftMargin() + 0.11, 1 - (gPad->GetTopMargin() - 0.017), "DAS 2018");
+        mark.DrawLatex(gPad->GetLeftMargin() + 0.11, 1 - (gPad->GetTopMargin() - 0.017), "Preliminary");
 
         //Draw lumistamp
         mark.SetTextFont(42);
@@ -312,7 +317,7 @@ public:
 
         // lower plot will be in pad2
         c->cd();          // Go back to the main canvas before defining pad2
-        TPad *pad2 = new TPad("pad2", "pad2", 0, 0.05, 1, 0.3);
+        TPad *pad2 = new TPad("pad2", "pad2", 0.0, 0.0, 1, 0.3);
         //pad2->SetTopMargin(0);
         //pad2->SetBottomMargin(0.2);
         pad2->SetGridy(); // Horizontal grid
@@ -328,6 +333,21 @@ public:
         //gPad->SetTopMargin(0);
         //gPad->SetBottomMargin(0.40);
 
+        //make ratio dummy
+        histInfo ratioDummy(new TH1D("rdummy", "rdummy", 1000, data_.h->GetBinLowEdge(1), data_.h->GetBinLowEdge(data_.h->GetNbinsX()) + data_.h->GetBinWidth(data_.h->GetNbinsX())));
+        ratioDummy.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
+        //ratioDummy.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
+        ratioDummy.h->GetYaxis()->SetTitle("Data / BG");
+        ratioDummy.h->GetXaxis()->SetTickLength(0.1);
+        ratioDummy.h->GetYaxis()->SetTickLength(0.045);
+        ratioDummy.setupAxes(1.2, 0.4, 0.15, 0.15, 0.13, 0.13);
+        ratioDummy.h->GetYaxis()->SetNdivisions(6, 5, 0);
+        ratioDummy.h->GetXaxis()->SetRangeUser(xmin, xmax);
+        ratioDummy.h->GetYaxis()->SetRangeUser(0.5, 1.5);
+        ratioDummy.h->SetStats(0);
+        //ratioDummy.h->SetMinimum(0.5);
+        //ratioDummy.h->SetMaximum(1.5);
+
         //Make ratio histogram for data / background.
         histInfo ratio((TH1*)data_.h->Clone());
 
@@ -336,22 +356,15 @@ public:
         
         ratio.drawOptions = "ep";
         ratio.color = kBlack;
-        ratio.h->GetXaxis()->SetTitle(xAxisLabel.c_str());
-        //ratio.h->GetYaxis()->SetTitle(yAxisLabel.c_str());
-        ratio.h->GetYaxis()->SetTitle("Data / BG");
-        ratio.h->GetXaxis()->SetTickLength(0.1);
-        ratio.h->GetYaxis()->SetTickLength(0.045);
-        ratio.setupAxes(1.2, 0.4, 0.15, 0.15, 0.13, 0.13);
-        ratio.h->GetYaxis()->SetNdivisions(6, 5, 0);
 
         //ratio.h->SetLineColor(kBlack);
-        ratio.h->SetMinimum(0.5);
-        ratio.h->SetMaximum(1.5);
-        ratio.h->Sumw2();
-        ratio.h->SetStats(0);
+        //ratio.h->Sumw2();
+        //ratio.h->SetStats(0);
         ratio.h->Divide(hbgSum);
         ratio.h->SetMarkerStyle(21);
-        ratio.draw();
+
+        ratioDummy.draw();
+        ratio.draw("same");
 
         //save new plot to file
         std::string name = histName;
@@ -369,7 +382,7 @@ public:
         delete bgStack;
         delete hbgSum;
 
-        printf("Finish plotting histogram %s\n", histName.c_str());
+//        printf("Finish plotting histogram %s\n", histName.c_str());
     }
 };
 
@@ -378,20 +391,23 @@ int main()
     //entry for data
     //this uses the initializer syntax to initialize the histInfo object
     //               leg entry  root file                 draw options  draw color
-    histInfo dataPhoton = {"Data",    "../TT_Data_SinglePhoton-2018-3-23.root", "PEX0",       kBlack};
-    histInfo dataMuon   = {"Data",    "../TT_Data_SingleMuon-2018-3-23.root",   "PEX0",       kBlack};
-    histInfo dataMET    = {"Data",    "../TT_Data_MET-2018-3-23.root",          "PEX0",       kBlack};
-    histInfo dataJetHT  = {"Data",    "../TT_Data_JetHT-2018-3-23.root",        "PEX0",       kBlack};
+    histInfo dataPhoton = {"Data",    "../TT_Data_SinglePhoton-2018-3-26_noWgt_v2.root", "PEX0",       kBlack};
+    histInfo dataMuon   = {"Data",    "../TT_Data_SingleMuon-2018-3-26_noWgt_v2.root",   "PEX0",       kBlack};
+    histInfo dataMET    = {"Data",    "../TT_Data_MET-2018-3-26_noWgt_v2.root",          "PEX0",       kBlack};
+    histInfo dataJetHT  = {"Data",    "../TT_Data_JetHT-2018-3-26_noWgt_v2.root",        "PEX0",       kBlack};
 
     //vector summarizing background histograms to include in the plot
     std::vector<histInfo> bgEntries = {
-        {"Z#rightarrowll",     "../TT_DYJetsToLL-2018-3-23.root",      "hist", kBlue},
-        {"t#bar{t}",           "../TT_TTbarSingleLep-2018-3-23.root",  "hist", kRed},
-        {"G+Jets",             "../TT_GJets-2018-3-23.root",           "hist", kGreen + 2},
-        {"QCD",                "../TT_QCD-2018-3-23.root",             "hist", kOrange},
-        {"W+Jets",             "../TT_WJetsToLNu-2018-3-23.root",      "hist", kGray},
-        {"TTG",                "../TT_TTG-2018-3-23.root",             "hist", kYellow + 3},
-        {"TTZ",                "../TT_TTZ-2018-3-23.root",             "hist", kMagenta + 2},
+        {"QCD",                "../TT_QCD-2018-3-26_noWgt_v2.root",               "hist", kOrange},
+        //{"t#bar{t}",           "../TT_TTbarSingleLep-2018-3-26_noWgt_v2.root",    "hist", kRed},
+        {"t#bar{t}",           "../TT_TTbar-2018-3-26_noWgt_v2.root",             "hist", kRed},
+        {"G+Jets",             "../TT_GJets-2018-3-26_noWgt_v2.root",             "hist", kGreen + 2},
+        {"Z#rightarrowll",     "../TT_DYJetsToLL-2018-3-26_noWgt_v2.root",        "hist", kBlue},
+        {"Z#rightarrow#nu#nu", "../TT_ZJetsToNuNu-2018-3-26_noWgt_v2.root",       "hist", kBlue + 2},
+        {"W+Jets",             "../TT_WJetsToLNu-2018-3-26_noWgt_v2.root",        "hist", kGray},
+        {"TTG",                "../TT_TTG-2018-3-26_noWgt_v2.root",               "hist", kYellow + 3},
+        {"TTZ",                "../TT_TTZ-2018-3-26_noWgt_v2.root",               "hist", kMagenta + 2},
+        {"diboson",            "../TT_Diboson-2018-3-26_noWgt_v2.root",           "hist", kPink - 2}
     };
 
     //vector summarizing signal histograms to include in the plot
@@ -407,24 +423,27 @@ int main()
 
     std::vector<std::pair<std::string, Plotter*>> controlRegions = {
         {"ttbar", &pltMET},
+        {"ttbarNob", &pltMET},
         {"photon", &pltPhoton},
         {"dilepton", &pltMuon},
         {"ttbarLep", &pltMuon},
         {"QCD", &pltJetHT},
+        {"QCDb", &pltJetHT},
     };
 
     for(auto& cr : controlRegions)
     {
 
         cr.second->plot(cr.first + "/HT", "H_{T} [GeV]", "Events", true, 0, 2000, 5);
-        cr.second->plot(cr.first + "/nJets", "N_{j}");
-        cr.second->plot(cr.first + "/nBJets", "N_{b}", "Events", false, -0.5, 9.5);
+        cr.second->plot(cr.first + "/MET", "MET [GeV]", "Events", true, 0, 1000, 5);
+        cr.second->plot(cr.first + "/nJets", "N_{j}", "Events", true);
+        cr.second->plot(cr.first + "/nBJets", "N_{b}", "Events", true, -0.5, 9.5);
         cr.second->plot(cr.first + "/nTops", "N_{t}", "Events", true);
         cr.second->plot(cr.first + "/fakerateHT2", "H_{T} [GeV]", "Events", true, 0, 2000, 5);
         cr.second->plot(cr.first + "/fakerateNj2", "N_{j}");
-        cr.second->plot(cr.first + "/fakerateNb2", "N_{b}", "Events", false, -0.5, 9.5);
+        cr.second->plot(cr.first + "/fakerateNb2", "N_{b}", "Events", true, -0.5, 9.5);
         cr.second->plot(cr.first + "/randomTopPt", "rand top p_{T} [GeV]", "Events", false, -1, -1, 5);
         cr.second->plot(cr.first + "/randomTopCandPt", "rand top p_{T} [GeV]", "Events", false, -1, -1, 5);
-        
+        cr.second->plot(cr.first + "/nVertices", "NPV");
     }
 }
